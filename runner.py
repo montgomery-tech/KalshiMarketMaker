@@ -78,7 +78,7 @@ def run_strategy(config_name: str, config: Dict):
         # Ensure logout happens even if an exception occurs
         api.logout()
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description="Kalshi Market Making Algorithm")
     parser.add_argument("--config", type=str, default="config.yaml", help="Path to config file")
     args = parser.parse_args()
@@ -98,3 +98,7 @@ if __name__ == "__main__":
     with ThreadPoolExecutor(max_workers=len(configs)) as executor:
         for config_name, config in configs.items():
             executor.submit(run_strategy, config_name, config)
+
+
+if __name__ == "__main__":
+    main()

@@ -7,7 +7,7 @@ This project implements a market making algorithm for Kalshi markets, capable of
 1. Clone the repository
 2. Install dependencies:
    ```
-   pip install -r requirements.txt
+   uv pip install -e .
    ```
 3. Create a `.env` file with your Kalshi credentials:
    ```
@@ -19,7 +19,7 @@ This project implements a market making algorithm for Kalshi markets, capable of
 4. Create or modify the `config.yaml` file with your market making configurations. Each configuration in this file will run as a separate strategy.
 5. Run the script:
    ```
-   python runner.py --config config.yaml
+   kalshi-mm --config config.yaml
    ```
 
 ## Configuration
