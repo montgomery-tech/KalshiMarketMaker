@@ -13,7 +13,7 @@ dynamic:
     volume_weight: 0.35
     spread_weight: 0.65
     mve_filter: exclude
-    category: "sports"
+    # category: "sports"  # Kalshi API ignores this param; use series_ticker to narrow scope
     page_limit: 250
     max_pages: 5
     max_markets: 1250
