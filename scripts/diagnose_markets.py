@@ -17,6 +17,9 @@ import os
 # Allow running from repo root without installing the package
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from kalshi_market_maker.logging_utils import build_logger
 from kalshi_market_maker.factories import create_api
 from kalshi_market_maker.selection.scoring import (
