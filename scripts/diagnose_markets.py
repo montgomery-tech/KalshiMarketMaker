@@ -121,10 +121,16 @@ def main():
             continue
         binary_markets.append(m)
 
+    def get_volume(m):
+        vol = safe_float(m.get("volume_24h_fp") or m.get("volume_24h") or 0)
+        if vol == 0:
+            vol = safe_float(m.get("volume_fp") or m.get("volume") or 0)
+        return vol
+
     volumes = []
     spreads = []
     for m in binary_markets:
-        vol = safe_float(m.get("volume_24h", m.get("volume", 0)))
+        vol = get_volume(m)
         spread = compute_spread_cents(m)
         volumes.append(vol)
         spreads.append(spread)
@@ -170,17 +176,19 @@ def main():
                 print(f"  median: {statistics.median(valid_spreads):.1f}c")
             print()
 
-    print("=== Sample markets (first 5 binary) ===")
-    for m in binary_markets[:5]:
+    # Show top 10 by volume (ignoring filters) so we can see best candidates
+    scored = sorted(
+        [(m, get_volume(m), compute_spread_cents(m)) for m in binary_markets],
+        key=lambda x: x[1], reverse=True,
+    )
+    print("=== Top 10 markets by volume (no filters) ===")
+    for m, vol, spread in scored[:10]:
         ticker = m.get("ticker", "?")
-        vol = safe_float(m.get("volume_24h", m.get("volume", 0)))
-        spread = compute_spread_cents(m)
-        bid = m.get("yes_bid", "?")
-        ask = m.get("yes_ask", "?")
-        spread_str = f"{spread:.1f}c" if spread >= 0 else "-1.0c"
-        bid_str = str(bid) if bid != "?" and bid is not None else "?"
-        ask_str = str(ask) if ask != "?" and ask is not None else "?"
-        print(f"  {ticker:<50} vol={vol:>6.0f}  spread={spread_str:>6}  bid={bid_str}  ask={ask_str}")
+        bid = m.get("yes_bid_dollars") or m.get("yes_bid") or "?"
+        ask = m.get("yes_ask_dollars") or m.get("yes_ask") or "?"
+        spread_str = f"{spread:.1f}c" if spread >= 0 else "no_quote"
+        passes = "PASS" if vol >= args.min_volume and spread >= args.min_spread else "fail"
+        print(f"  [{passes}] {ticker:<46} vol={vol:>7.0f}  spread={spread_str:>8}  bid={bid}  ask={ask}")
 
     print()
     if n_passed == 0:
