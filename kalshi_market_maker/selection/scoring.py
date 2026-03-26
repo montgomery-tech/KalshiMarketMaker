@@ -71,12 +71,11 @@ def select_top_markets(markets: List[Dict], selector_cfg: Dict) -> List[Tuple[st
         if not ticker:
             continue
 
-        # Current API uses _fp (fixed-point) suffix; fall back to legacy field names
-        raw_vol = next(
-            (market[f] for f in ("volume_24h_fp", "volume_24h", "volume_fp", "volume") if f in market),
-            0,
-        )
-        volume_24h = safe_float(raw_vol)
+        # Prefer 24h volume; fall back to lifetime volume for newly-opened markets
+        # where volume_24h_fp is present but still 0 (e.g. pre-game markets).
+        volume_24h = safe_float(market.get("volume_24h_fp") or market.get("volume_24h") or 0)
+        if volume_24h == 0:
+            volume_24h = safe_float(market.get("volume_fp") or market.get("volume") or 0)
         spread_cents = compute_spread_cents(market)
 
         if volume_24h < min_volume_24h or spread_cents < min_spread_cents:
