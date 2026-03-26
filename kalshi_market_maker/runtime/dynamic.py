@@ -19,6 +19,7 @@ def run_dynamic_strategy(dynamic_config: Dict):
     refresh_seconds = safe_float(selector_cfg.get("refresh_seconds", 20), 20.0)
     series_ticker = selector_cfg.get("series_ticker")
     mve_filter = selector_cfg.get("mve_filter", "exclude")
+    category = selector_cfg.get("category")
     page_limit = int(selector_cfg.get("page_limit", 250))
     max_pages = int(selector_cfg.get("max_pages", 5))
     max_markets = int(selector_cfg.get("max_markets", 1250))
@@ -44,6 +45,7 @@ def run_dynamic_strategy(dynamic_config: Dict):
                         page_limit=page_limit,
                         max_pages=max_pages,
                         max_markets=max_markets,
+                        category=category,
                     )
                     ranked = select_top_markets(markets, selector_cfg)
                     selected_tickers = [ticker for ticker, _, _, _ in ranked]

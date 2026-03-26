@@ -13,10 +13,11 @@ dynamic:
     volume_weight: 0.35
     spread_weight: 0.65
     mve_filter: exclude
+    category: "sports"
     page_limit: 250
     max_pages: 5
     max_markets: 1250
-    # series_ticker: "FED"
+    # series_ticker: "KXNBA"  # narrow to a specific sport/series
   market_maker:
     max_position: 3
     order_expiration: 3600
