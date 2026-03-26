@@ -77,11 +77,14 @@ if volume_samples:
     print(f"  max:    {max(volume_samples):.0f}")
     print(f"  median: {sorted(volume_samples)[len(volume_samples)//2]:.0f}")
 
-if spread_samples:
+valid_spreads = [s for s in spread_samples if s >= 0]
+if valid_spreads:
     print(f"\n=== Spread stats (binary markets only) ===")
-    print(f"  min:    {min(s for s in spread_samples if s >= 0):.1f}c")
-    print(f"  max:    {max(spread_samples):.1f}c")
-    print(f"  median: {sorted(spread_samples)[len(spread_samples)//2]:.1f}c")
+    print(f"  min:    {min(valid_spreads):.1f}c")
+    print(f"  max:    {max(valid_spreads):.1f}c")
+    print(f"  median: {sorted(valid_spreads)[len(valid_spreads)//2]:.1f}c")
+elif spread_samples:
+    print(f"\n=== Spread stats: all {len(spread_samples)} markets have no bid/ask (no_quote) ===")
 
 print("\n=== Sample markets (first 5 binary) ===")
 shown = 0
