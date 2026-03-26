@@ -100,7 +100,7 @@ def main():
         print()
 
     # Volume field investigation
-    volume_fields = ["volume_24h", "volume", "dollar_volume", "liquidity"]
+    volume_fields = ["volume_24h_fp", "volume_fp", "volume_24h", "volume", "liquidity_dollars"]
     print("=== Volume field presence across markets ===")
     for field in volume_fields:
         non_zero = sum(1 for m in markets if safe_float(m.get(field), 0) > 0)

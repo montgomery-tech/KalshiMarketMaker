@@ -9,6 +9,13 @@ def safe_float(value, default=0.0):
 
 
 def compute_spread_cents(market: Dict) -> float:
+    # Current API returns dollar-denominated fields (yes_bid_dollars: '0.3000' = 30¢)
+    bid_d = safe_float(market.get("yes_bid_dollars"), -1)
+    ask_d = safe_float(market.get("yes_ask_dollars"), -1)
+    if bid_d >= 0 and ask_d >= 0:
+        return (ask_d - bid_d) * 100
+
+    # Legacy API returns integer cent fields (yes_bid: 30 = 30¢)
     yes_bid = safe_float(market.get("yes_bid"), -1)
     yes_ask = safe_float(market.get("yes_ask"), -1)
     if yes_bid < 0 or yes_ask < 0:
@@ -64,7 +71,12 @@ def select_top_markets(markets: List[Dict], selector_cfg: Dict) -> List[Tuple[st
         if not ticker:
             continue
 
-        volume_24h = safe_float(market.get("volume_24h", market.get("volume", 0)))
+        # Current API uses _fp (fixed-point) suffix; fall back to legacy field names
+        raw_vol = next(
+            (market[f] for f in ("volume_24h_fp", "volume_24h", "volume_fp", "volume") if f in market),
+            0,
+        )
+        volume_24h = safe_float(raw_vol)
         spread_cents = compute_spread_cents(market)
 
         if volume_24h < min_volume_24h or spread_cents < min_spread_cents:

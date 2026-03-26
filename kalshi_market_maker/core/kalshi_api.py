@@ -140,14 +140,20 @@ class KalshiTradingAPI(AbstractTradingAPI):
     def get_price(self) -> Dict[str, float]:
         path = f"/markets/{self.market_ticker}"
         data = self.make_request("GET", path)
+        market = data["market"]
 
-        yes_bid = float(data["market"]["yes_bid"]) / 100
-        yes_ask = float(data["market"]["yes_ask"]) / 100
-        no_bid = float(data["market"]["no_bid"]) / 100
-        no_ask = float(data["market"]["no_ask"]) / 100
-
-        yes_mid_price = round((yes_bid + yes_ask) / 2, 2)
-        no_mid_price = round((no_bid + no_ask) / 2, 2)
+        # Current API returns dollar-denominated fields (e.g. yes_bid_dollars: '0.3000' = 30¢ = 0.30)
+        if "yes_bid_dollars" in market:
+            yes_mid_price = round(
+                (float(market["yes_bid_dollars"]) + float(market["yes_ask_dollars"])) / 2, 2
+            )
+            no_mid_price = round(
+                (float(market["no_bid_dollars"]) + float(market["no_ask_dollars"])) / 2, 2
+            )
+        else:
+            # Legacy API returns integer cents (e.g. yes_bid: 30)
+            yes_mid_price = round((float(market["yes_bid"]) + float(market["yes_ask"])) / 200, 2)
+            no_mid_price = round((float(market["no_bid"]) + float(market["no_ask"])) / 200, 2)
 
         return {"yes": yes_mid_price, "no": no_mid_price}
 
