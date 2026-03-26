@@ -42,6 +42,7 @@ def parse_args():
     p.add_argument("--raw", action="store_true", help="Print raw fields of first market object")
     p.add_argument("--min-volume", type=float, default=MIN_VOLUME_24H, help="Volume threshold (default 500)")
     p.add_argument("--min-spread", type=float, default=MIN_SPREAD_CENTS, help="Spread threshold cents (default 2)")
+    p.add_argument("--pages", type=int, default=1, help="Number of pages to fetch (default 1, use 5 to match bot)")
     return p.parse_args()
 
 
@@ -53,15 +54,15 @@ def main():
 
     category = None if args.no_category else args.category
     label = f"category={category!r}" if category else "no category filter"
-    print(f"\nFetching markets ({label}, limit={args.limit})...\n")
+    print(f"\nFetching markets ({label}, {args.pages} page(s) x {args.limit} per page)...\n")
 
-    response = api.list_markets(
-        status="open",
-        limit=args.limit,
+    markets = api.list_all_open_markets(
         mve_filter="exclude",
         category=category,
+        page_limit=args.limit,
+        max_pages=args.pages,
+        max_markets=args.limit * args.pages,
     )
-    markets = response.get("markets", [])
     print(f"Total fetched: {len(markets)}\n")
 
     if not markets:
