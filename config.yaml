@@ -15,8 +15,8 @@ dynamic:
     mve_filter: exclude
     # category: "sports"  # Kalshi API ignores this param; use series_ticker to narrow scope
     page_limit: 250
-    max_pages: 5
-    max_markets: 1250
+    max_pages: 10
+    max_markets: 2500
     # series_ticker: "KXNBA"  # narrow to a specific sport/series
   market_maker:
     max_position: 3
