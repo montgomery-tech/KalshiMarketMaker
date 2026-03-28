@@ -196,6 +196,11 @@ class KalshiTradingAPI(AbstractTradingAPI):
         path = f"/markets/{ticker}"
         return self.make_request("GET", path)
 
+    def get_trades(self, ticker: str, limit: int = 25) -> List[Dict]:
+        path = f"/markets/{ticker}/trades"
+        response = self.make_request("GET", path, params={"limit": limit})
+        return response.get("trades", [])
+
     def list_all_positions(
         self,
         page_limit: int = 200,
