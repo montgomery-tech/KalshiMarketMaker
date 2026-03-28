@@ -56,8 +56,13 @@ def select_top_markets(markets: List[Dict], selector_cfg: Dict) -> List[Tuple[st
     spread_weight = safe_float(selector_cfg.get("spread_weight", 0.5))
 
     candidates = []
+    rejected_unsupported = 0
+    rejected_volume = 0
+    rejected_spread = 0
+
     for market in markets:
         if not is_supported_binary_market(market):
+            rejected_unsupported += 1
             continue
 
         ticker = market.get("ticker")
@@ -67,7 +72,11 @@ def select_top_markets(markets: List[Dict], selector_cfg: Dict) -> List[Tuple[st
         volume_24h = safe_float(market.get("volume_24h", market.get("volume", 0)))
         spread_cents = compute_spread_cents(market)
 
-        if volume_24h < min_volume_24h or spread_cents < min_spread_cents:
+        if volume_24h < min_volume_24h:
+            rejected_volume += 1
+            continue
+        if spread_cents < min_spread_cents:
+            rejected_spread += 1
             continue
 
         candidates.append(
@@ -77,6 +86,15 @@ def select_top_markets(markets: List[Dict], selector_cfg: Dict) -> List[Tuple[st
                 "spread_cents": spread_cents,
             }
         )
+
+    import logging
+    logging.getLogger("Selector.scoring").info(
+        f"Selection filter breakdown: total={len(markets)} "
+        f"rejected_unsupported={rejected_unsupported} "
+        f"rejected_volume={rejected_volume} (min={min_volume_24h}) "
+        f"rejected_spread={rejected_spread} (min={min_spread_cents}) "
+        f"candidates={len(candidates)}"
+    )
 
     if not candidates:
         return []
