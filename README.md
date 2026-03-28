@@ -111,6 +111,21 @@ kalshi-dashboard --refresh-seconds 1.5 --balance-every-n 10
 Controls:
 - Press `q` to quit.
 
+List all live sports contracts:
+
+```bash
+kalshi-list-sports
+```
+
+Filter and sort options:
+
+```bash
+kalshi-list-sports --series NBA
+kalshi-list-sports --sort ticker
+kalshi-list-sports --sort open_interest
+kalshi-list-sports --min-volume 100
+```
+
 Cancel resting orders across all markets:
 
 ```bash
