@@ -11,9 +11,16 @@ def safe_float(value, default=0.0):
 def compute_spread_cents(market: Dict) -> float:
     yes_bid = safe_float(market.get("yes_bid_dollars"), -1)
     yes_ask = safe_float(market.get("yes_ask_dollars"), -1)
-    if yes_bid < 0 or yes_ask < 0:
-        return -1
-    return round((yes_ask - yes_bid) * 100, 2)
+    if yes_bid >= 0 and yes_ask >= 0:
+        return round((yes_ask - yes_bid) * 100, 2)
+    # Fall back to no-side to derive yes prices
+    no_bid = safe_float(market.get("no_bid_dollars"), -1)
+    no_ask = safe_float(market.get("no_ask_dollars"), -1)
+    if no_bid >= 0 and no_ask >= 0:
+        implied_yes_bid = round(1.0 - no_ask, 4)
+        implied_yes_ask = round(1.0 - no_bid, 4)
+        return round((implied_yes_ask - implied_yes_bid) * 100, 2)
+    return -1
 
 
 def is_supported_binary_market(market: Dict) -> bool:
@@ -64,7 +71,7 @@ def select_top_markets(markets: List[Dict], selector_cfg: Dict) -> List[Tuple[st
         if not ticker:
             continue
 
-        volume_24h = safe_float(market.get("volume_24h", market.get("volume", 0)))
+        volume_24h = safe_float(market.get("volume_24h_fp", market.get("volume_24h", market.get("volume", 0))))
         spread_cents = compute_spread_cents(market)
 
         if volume_24h < min_volume_24h or spread_cents < min_spread_cents:
