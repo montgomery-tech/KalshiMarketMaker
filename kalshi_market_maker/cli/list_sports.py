@@ -7,6 +7,19 @@ from dotenv import find_dotenv, load_dotenv
 from ..factories import create_api
 from ..logging_utils import build_logger
 
+SPORTS_KEYWORDS = {
+    "NBA", "NFL", "MLB", "NHL", "NCAAB", "NCAAF",
+    "MLS", "EPL", "PGA", "UFC", "ATP", "WTA",
+    "NASCAR", "SOCCER", "TENNIS", "GOLF", "NBASG",
+    "NFLSG", "MLBSG", "NHLSG",
+}
+
+
+def is_sports_market(market: Dict) -> bool:
+    series = market.get("series_ticker", "").upper()
+    ticker = market.get("ticker", "").upper()
+    return any(kw in series or ticker.startswith("KX" + kw) for kw in SPORTS_KEYWORDS)
+
 
 def safe_int(value, default: int = 0) -> int:
     try:
@@ -135,11 +148,12 @@ def main():
 
     try:
         markets = api.list_all_open_markets(
-            category="Sports",
             page_limit=args.page_limit,
             max_pages=args.max_pages,
             max_markets=args.page_limit * args.max_pages,
         )
+
+        markets = [m for m in markets if is_sports_market(m)]
 
         if args.live_hours:
             markets = [m for m in markets if is_live(m, args.live_hours)]
