@@ -134,10 +134,14 @@ def run_observer(stdscr, args, api, mm, ticker, trade_side):
             mid = prices[f"{trade_side}_mid"]
             reservation = mm.calculate_reservation_price(mid, inventory, elapsed)
             our_bid, our_ask = mm.calculate_asymmetric_quotes(mid, inventory, elapsed)
-            trades = api.get_trades(ticker, limit=args.num_trades)
             last_error = ""
         except Exception as exc:
             last_error = str(exc)
+
+        try:
+            trades = api.get_trades(ticker, limit=args.num_trades)
+        except Exception:
+            trades = []
 
         if prices:
             draw(stdscr, ticker, trade_side, prices, inventory, reservation, our_bid, our_ask, elapsed, mm.T, trades, last_error, args.refresh)

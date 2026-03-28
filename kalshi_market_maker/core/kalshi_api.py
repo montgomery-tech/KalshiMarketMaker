@@ -109,6 +109,8 @@ class KalshiTradingAPI(AbstractTradingAPI):
 
                 response.raise_for_status()
                 return response.json()
+            except requests.exceptions.HTTPError:
+                raise
             except requests.exceptions.RequestException as request_exception:
                 if attempt < max_retries:
                     backoff = 0.5 * (2**attempt) + random.uniform(0, 0.25)
