@@ -14,10 +14,10 @@ def fetch_market_prices(api, ticker: str):
     """Return raw bid/ask/mid for yes and no sides."""
     data = api.get_market(ticker)
     market = data["market"]
-    yes_bid = float(market["yes_bid_dollars"])
-    yes_ask = float(market["yes_ask_dollars"])
-    no_bid = float(market["no_bid_dollars"])
-    no_ask = float(market["no_ask_dollars"])
+    yes_bid = float(market["yes_bid"]) / 100
+    yes_ask = float(market["yes_ask"]) / 100
+    no_bid = float(market["no_bid"]) / 100
+    no_ask = float(market["no_ask"]) / 100
     yes_mid = round((yes_bid + yes_ask) / 2, 4)
     no_mid = round((no_bid + no_ask) / 2, 4)
     return {
