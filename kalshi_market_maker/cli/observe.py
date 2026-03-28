@@ -84,6 +84,13 @@ def run_observer(stdscr, args, api, mm, ticker, trade_side):
     our_ask = 0.0
     last_error = ""
 
+    # Show connecting screen immediately before the first API call
+    height, width = stdscr.getmaxyx()
+    stdscr.erase()
+    stdscr.addstr(0, 0, f"A&S Observer  |  {ticker}  |  Connecting...", curses.A_BOLD)
+    stdscr.addstr(2, 0, "Fetching market data, please wait...")
+    stdscr.refresh()
+
     while True:
         key = stdscr.getch()
         if key in (ord("q"), ord("Q")):
@@ -103,8 +110,18 @@ def run_observer(stdscr, args, api, mm, ticker, trade_side):
 
         if prices:
             draw(stdscr, ticker, trade_side, prices, inventory, reservation, our_bid, our_ask, elapsed, mm.T, last_error, args.refresh)
+        elif last_error:
+            stdscr.erase()
+            stdscr.addstr(0, 0, f"A&S Observer  |  {ticker}  |  q=quit", curses.A_BOLD)
+            stdscr.addstr(2, 0, f"ERROR: {last_error}")
+            stdscr.refresh()
 
-        time.sleep(max(0.2, args.refresh))
+        next_fetch = time.time() + max(0.2, args.refresh)
+        while time.time() < next_fetch:
+            key = stdscr.getch()
+            if key in (ord("q"), ord("Q")):
+                return
+            time.sleep(0.1)
 
 
 def main():
