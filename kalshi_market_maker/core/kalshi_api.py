@@ -141,10 +141,24 @@ class KalshiTradingAPI(AbstractTradingAPI):
         path = f"/markets/{self.market_ticker}"
         data = self.make_request("GET", path)
 
-        yes_bid = float(data["market"]["yes_bid"]) / 100
-        yes_ask = float(data["market"]["yes_ask"]) / 100
-        no_bid = float(data["market"]["no_bid"]) / 100
-        no_ask = float(data["market"]["no_ask"]) / 100
+        market = data["market"]
+        yes_bid_raw = market.get("yes_bid")
+        yes_ask_raw = market.get("yes_ask")
+        no_bid_raw = market.get("no_bid")
+        no_ask_raw = market.get("no_ask")
+
+        if yes_bid_raw is None or yes_ask_raw is None or no_bid_raw is None or no_ask_raw is None:
+            raise ValueError(
+                f"Market {self.market_ticker} is missing bid/ask data "
+                f"(yes_bid={yes_bid_raw}, yes_ask={yes_ask_raw}, "
+                f"no_bid={no_bid_raw}, no_ask={no_ask_raw}). "
+                f"The market may be inactive or have no resting orders."
+            )
+
+        yes_bid = float(yes_bid_raw) / 100
+        yes_ask = float(yes_ask_raw) / 100
+        no_bid = float(no_bid_raw) / 100
+        no_ask = float(no_ask_raw) / 100
 
         yes_mid_price = round((yes_bid + yes_ask) / 2, 2)
         no_mid_price = round((no_bid + no_ask) / 2, 2)
