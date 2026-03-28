@@ -118,8 +118,8 @@ def main():
         "--sort",
         type=str,
         choices=["ticker", "volume", "open_interest", "closes"],
-        default="closes",
-        help="Sort results by field (default: closes)",
+        default="volume",
+        help="Sort results by field (default: volume)",
     )
     parser.add_argument(
         "--min-volume",
@@ -130,14 +130,14 @@ def main():
     parser.add_argument(
         "--page-limit",
         type=int,
-        default=250,
-        help="Markets per page (default: 250)",
+        default=1000,
+        help="Markets per page (default: 1000)",
     )
     parser.add_argument(
         "--max-pages",
         type=int,
-        default=10,
-        help="Maximum pages to fetch (default: 10)",
+        default=50,
+        help="Maximum pages to fetch (default: 50)",
     )
     parser.add_argument("--log-level", type=str, default="WARNING", help="Logging level")
     args = parser.parse_args()
