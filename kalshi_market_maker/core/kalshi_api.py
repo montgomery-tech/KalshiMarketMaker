@@ -142,53 +142,22 @@ class KalshiTradingAPI(AbstractTradingAPI):
         data = self.make_request("GET", path)
 
         market = data["market"]
-        yes_bid_raw = market.get("yes_bid")
-        yes_ask_raw = market.get("yes_ask")
-        no_bid_raw = market.get("no_bid")
-        no_ask_raw = market.get("no_ask")
+        yes_bid = market.get("yes_bid_dollars")
+        yes_ask = market.get("yes_ask_dollars")
+        no_bid = market.get("no_bid_dollars")
+        no_ask = market.get("no_ask_dollars")
 
-        if yes_bid_raw is None or yes_ask_raw is None or no_bid_raw is None or no_ask_raw is None:
-            yes_bid_raw, yes_ask_raw, no_bid_raw, no_ask_raw = self._get_prices_from_orderbook()
+        if yes_bid is None or yes_ask is None or no_bid is None or no_ask is None:
+            raise ValueError(
+                f"Market {self.market_ticker} is missing bid/ask data "
+                f"(yes_bid_dollars={yes_bid}, yes_ask_dollars={yes_ask}, "
+                f"no_bid_dollars={no_bid}, no_ask_dollars={no_ask})."
+            )
 
-        yes_bid = float(yes_bid_raw) / 100
-        yes_ask = float(yes_ask_raw) / 100
-        no_bid = float(no_bid_raw) / 100
-        no_ask = float(no_ask_raw) / 100
-
-        yes_mid_price = round((yes_bid + yes_ask) / 2, 2)
-        no_mid_price = round((no_bid + no_ask) / 2, 2)
+        yes_mid_price = round((float(yes_bid) + float(yes_ask)) / 2, 2)
+        no_mid_price = round((float(no_bid) + float(no_ask)) / 2, 2)
 
         return {"yes": yes_mid_price, "no": no_mid_price}
-
-    def _get_prices_from_orderbook(self):
-        """Fetch best bid/ask from the order book when the market fields are null."""
-        path = f"/markets/{self.market_ticker}/orderbook"
-        data = self.make_request("GET", path)
-        orderbook = data.get("orderbook", {})
-
-        yes_levels = orderbook.get("yes") or []
-        no_levels = orderbook.get("no") or []
-
-        if not yes_levels and not no_levels:
-            raise ValueError(
-                f"Market {self.market_ticker} has no resting orders on either side of the book."
-            )
-
-        # yes levels: sorted descending by price — best (highest) bid is first
-        yes_bid_raw = yes_levels[0][0] if yes_levels else None
-        # no levels: sorted descending by price — best no bid → implied yes ask = 100 - no_bid
-        no_bid_raw = no_levels[0][0] if no_levels else None
-
-        if yes_bid_raw is None or no_bid_raw is None:
-            raise ValueError(
-                f"Market {self.market_ticker} is missing one side of the book "
-                f"(yes_bid={yes_bid_raw}, no_bid={no_bid_raw})."
-            )
-
-        yes_ask_raw = 100 - no_bid_raw
-        no_ask_raw = 100 - yes_bid_raw
-
-        return yes_bid_raw, yes_ask_raw, no_bid_raw, no_ask_raw
 
     def place_order(self, action: str, side: str, price: float, quantity: int, expiration_ts: int = None) -> str:
         return self.place_order_for_ticker(

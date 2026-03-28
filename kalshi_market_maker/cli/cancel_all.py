@@ -178,20 +178,20 @@ def main():
                 if signed_position > 0:
                     action = "sell"
                     side = "yes"
-                    best_bid = market_data.get("yes_bid")
+                    best_bid = market_data.get("yes_bid_dollars")
                     if best_bid is None:
-                        logger.error(f"Skipping liquidation for {ticker}: missing yes_bid")
+                        logger.error(f"Skipping liquidation for {ticker}: missing yes_bid_dollars")
                         continue
-                    price_cents = max(1, int(best_bid) - price_offset_cents)
+                    price_cents = max(1, round(float(best_bid) * 100) - price_offset_cents)
                     quantity = signed_position
                 else:
                     action = "buy"
                     side = "yes"
-                    best_ask = market_data.get("yes_ask")
+                    best_ask = market_data.get("yes_ask_dollars")
                     if best_ask is None:
-                        logger.error(f"Skipping liquidation for {ticker}: missing yes_ask")
+                        logger.error(f"Skipping liquidation for {ticker}: missing yes_ask_dollars")
                         continue
-                    price_cents = min(99, int(best_ask) + price_offset_cents)
+                    price_cents = min(99, round(float(best_ask) * 100) + price_offset_cents)
                     quantity = abs(signed_position)
 
                 liquidation_candidates.append(
