@@ -92,13 +92,8 @@ def main():
     parser.add_argument(
         "--live-hours",
         type=float,
-        default=6.0,
-        help="Show markets closing within this many hours (default: 6). Use --all to skip this filter.",
-    )
-    parser.add_argument(
-        "--all",
-        action="store_true",
-        help="Show all open sports markets, not just live ones",
+        default=None,
+        help="Only show markets closing within this many hours (e.g. --live-hours 4 for in-progress games)",
     )
     parser.add_argument(
         "--series",
@@ -139,15 +134,14 @@ def main():
     api = create_api({}, logger, market_ticker="DYNAMIC")
 
     try:
-        all_markets = api.list_all_open_markets(
+        markets = api.list_all_open_markets(
+            category="Sports",
             page_limit=args.page_limit,
             max_pages=args.max_pages,
             max_markets=args.page_limit * args.max_pages,
         )
 
-        markets = [m for m in all_markets if "sport" in m.get("category", "").lower()]
-
-        if not args.all:
+        if args.live_hours:
             markets = [m for m in markets if is_live(m, args.live_hours)]
 
         if args.min_volume > 0:
