@@ -87,13 +87,13 @@ def select_top_markets(markets: List[Dict], selector_cfg: Dict) -> List[Tuple[st
             }
         )
 
-    import logging
-    logging.getLogger("Selector.scoring").info(
-        f"Selection filter breakdown: total={len(markets)} "
+    print(
+        f"[scoring] filter breakdown: total={len(markets)} "
         f"rejected_unsupported={rejected_unsupported} "
         f"rejected_volume={rejected_volume} (min={min_volume_24h}) "
         f"rejected_spread={rejected_spread} (min={min_spread_cents}) "
-        f"candidates={len(candidates)}"
+        f"candidates={len(candidates)}",
+        flush=True,
     )
 
     if not candidates:
