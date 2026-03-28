@@ -103,17 +103,28 @@ def run_dynamic_strategy(dynamic_config: Dict):
                             )
 
                 for ticker in selected_tickers:
-                    if ticker not in active_workers:
-                        logger.info(f"Starting worker for selected ticker {ticker}")
-                        stop_event = threading.Event()
-                        future = executor.submit(
-                            run_market_worker,
-                            ticker,
-                            dynamic_config,
-                            stop_event,
-                            shared_risk_state,
-                        )
-                        active_workers[ticker] = (stop_event, future)
+                    existing = active_workers.get(ticker)
+                    if existing is not None:
+                        _, future = existing
+                        if not future.done():
+                            continue
+                        exc = future.exception()
+                        if exc:
+                            logger.warning(f"Worker for {ticker} crashed ({exc}), restarting")
+                        else:
+                            logger.info(f"Worker for {ticker} finished, restarting")
+                        del active_workers[ticker]
+
+                    logger.info(f"Starting worker for selected ticker {ticker}")
+                    stop_event = threading.Event()
+                    future = executor.submit(
+                        run_market_worker,
+                        ticker,
+                        dynamic_config,
+                        stop_event,
+                        shared_risk_state,
+                    )
+                    active_workers[ticker] = (stop_event, future)
 
                 time.sleep(refresh_seconds)
         except KeyboardInterrupt:
