@@ -24,6 +24,7 @@ class AvellanedaMarketMaker:
         max_contracts_per_market: Optional[int] = None,
         reserve_contracts_buffer: int = 0,
         shared_risk_state: Optional[Dict] = None,
+        close_time_ts: Optional[int] = None,
     ):
         self.api = api
         self.logger = logger
@@ -41,6 +42,7 @@ class AvellanedaMarketMaker:
         self.max_contracts_per_market = max_contracts_per_market
         self.reserve_contracts_buffer = max(0, int(reserve_contracts_buffer))
         self.shared_risk_state = shared_risk_state or {"active_markets": 1}
+        self.close_time_ts = close_time_ts
 
     def run(self, dt: float, stop_event=None):
         start_time = time.time()
@@ -231,10 +233,13 @@ class AvellanedaMarketMaker:
         )
 
         if keep_order is None and should_place:
+            expiration_ts = int(time.time()) + self.order_expiration
+            if self.close_time_ts is not None:
+                expiration_ts = min(expiration_ts, self.close_time_ts)
             self.api.place_order(
                 action,
                 self.trade_side,
                 desired_price,
                 desired_size,
-                int(time.time()) + self.order_expiration,
+                expiration_ts,
             )

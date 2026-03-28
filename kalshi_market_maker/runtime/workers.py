@@ -1,5 +1,7 @@
-from typing import Dict
+from datetime import datetime, timezone
+from typing import Dict, Optional, Tuple
 import threading
+import time
 
 from ..factories import create_api, create_market_maker
 from ..logging_utils import build_logger
@@ -35,6 +37,42 @@ def _is_unsupported_market(ticker: str, market_data: Dict) -> bool:
     return False
 
 
+def _parse_close_time(raw_close_time: str) -> Optional[int]:
+    """Parse a Kalshi close_time string to a unix timestamp. Returns None on failure."""
+    try:
+        dt = datetime.fromisoformat(raw_close_time.replace("Z", "+00:00"))
+        return int(dt.timestamp())
+    except Exception:
+        return None
+
+
+def _compute_T_and_close_ts(
+    market_data: Dict,
+    config_T: float,
+    logger,
+    ticker: str,
+) -> Tuple[float, Optional[int]]:
+    """Derive trading horizon T and close_time_ts from market data.
+
+    Returns (T_seconds, close_time_ts_or_None).
+    Falls back to config_T if close_time is missing or unparseable.
+    """
+    raw_close_time = market_data.get("close_time")
+    if not raw_close_time:
+        logger.warning(f"{ticker}: no close_time in market data, using config T={config_T:.0f}s")
+        return config_T, None
+
+    close_time_ts = _parse_close_time(raw_close_time)
+    if close_time_ts is None:
+        logger.warning(f"{ticker}: could not parse close_time '{raw_close_time}', using config T={config_T:.0f}s")
+        return config_T, None
+
+    time_until_close = close_time_ts - time.time()
+    T = min(config_T, time_until_close)
+    logger.info(f"{ticker}: market closes in {time_until_close:.0f}s, using T={T:.0f}s")
+    return T, close_time_ts
+
+
 def run_market_worker(
     ticker: str,
     dynamic_config: Dict,
@@ -64,12 +102,23 @@ def run_market_worker(
         api.logout()
         return
 
+    mm_config = dynamic_config.get("market_maker", {})
+    config_T = float(mm_config.get("T", 28800))
+    T, close_time_ts = _compute_T_and_close_ts(market_data, config_T, logger, ticker)
+
+    if T <= 60:
+        logger.warning(f"{ticker}: market closes in {T:.0f}s, too soon to trade. Skipping.")
+        api.logout()
+        return
+
     market_maker = create_market_maker(
-        dynamic_config.get("market_maker", {}),
+        mm_config,
         api,
         logger,
         dynamic_config.get("risk", {}),
         shared_risk_state,
+        T_override=T,
+        close_time_ts=close_time_ts,
     )
     dt = dynamic_config.get("dt", 2.0)
 

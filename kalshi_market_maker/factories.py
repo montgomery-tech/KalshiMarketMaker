@@ -20,8 +20,17 @@ def create_api(api_config: Dict, logger, market_ticker: str | None = None) -> Ka
     )
 
 
-def create_market_maker(mm_config: Dict, api, logger, risk_config: Dict | None = None, shared_risk_state: Dict | None = None) -> AvellanedaMarketMaker:
+def create_market_maker(
+    mm_config: Dict,
+    api,
+    logger,
+    risk_config: Dict | None = None,
+    shared_risk_state: Dict | None = None,
+    T_override: float | None = None,
+    close_time_ts: int | None = None,
+) -> AvellanedaMarketMaker:
     risk_config = risk_config or {}
+    T = T_override if T_override is not None else mm_config.get("T", 3600)
 
     return AvellanedaMarketMaker(
         logger=logger,
@@ -29,7 +38,7 @@ def create_market_maker(mm_config: Dict, api, logger, risk_config: Dict | None =
         gamma=mm_config.get("gamma", 0.1),
         k=mm_config.get("k", 1.5),
         sigma=mm_config.get("sigma", 0.5),
-        T=mm_config.get("T", 3600),
+        T=T,
         max_position=mm_config.get("max_position", 100),
         order_expiration=mm_config.get("order_expiration", 300),
         min_spread=mm_config.get("min_spread", 0.01),
@@ -40,4 +49,5 @@ def create_market_maker(mm_config: Dict, api, logger, risk_config: Dict | None =
         max_contracts_per_market=risk_config.get("max_contracts_per_market"),
         reserve_contracts_buffer=risk_config.get("reserve_contracts_buffer", 0),
         shared_risk_state=shared_risk_state,
+        close_time_ts=close_time_ts,
     )
