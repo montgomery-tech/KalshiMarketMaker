@@ -210,11 +210,12 @@ class AvellanedaMarketMaker:
         keep_order = None
 
         for order in orders:
-            current_price = (
-                float(order["yes_price"]) / 100
-                if self.trade_side == "yes"
-                else float(order["no_price"]) / 100
-            )
+            if self.trade_side == "yes":
+                raw = order.get("yes_price_dollars", order.get("yes_price"))
+                current_price = float(raw) if float(raw) <= 1 else float(raw) / 100
+            else:
+                raw = order.get("no_price_dollars", order.get("no_price"))
+                current_price = float(raw) if float(raw) <= 1 else float(raw) / 100
             if (
                 keep_order is None
                 and abs(current_price - desired_price) < 0.01
