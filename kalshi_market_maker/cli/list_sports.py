@@ -1,7 +1,7 @@
 import argparse
 from typing import Dict, List
 
-from dotenv import load_dotenv
+from dotenv import find_dotenv, load_dotenv
 
 from ..factories import create_api
 from ..logging_utils import build_logger
@@ -91,7 +91,7 @@ def main():
     parser.add_argument("--log-level", type=str, default="WARNING", help="Logging level")
     args = parser.parse_args()
 
-    load_dotenv()
+    load_dotenv(find_dotenv(usecwd=True))
     logger = build_logger("ListSports", args.log_level)
     api = create_api({}, logger, market_ticker="DYNAMIC")
 
