@@ -18,6 +18,9 @@ dynamic:
     max_pages: 5
     max_markets: 1250
     # series_ticker: "KXNBA"  # narrow to a specific sport/series
+    # pinned_tickers:          # skip selector and trade these markets directly
+    #   - "TICKER1"
+    #   - "TICKER2"
   market_maker:
     max_position: 3
     order_expiration: 3600

@@ -24,55 +24,65 @@ def run_dynamic_strategy(dynamic_config: Dict):
     max_pages = int(selector_cfg.get("max_pages", 5))
     max_markets = int(selector_cfg.get("max_markets", 1250))
 
+    pinned_tickers: List[str] = selector_cfg.get("pinned_tickers") or []
+
     selector_api = create_api(dynamic_config.get("api", {}), logger, market_ticker="DYNAMIC")
     active_workers: Dict[str, Tuple[threading.Event, object]] = {}
-    max_workers = int(selector_cfg.get("top_n", 8)) + 1
+    max_workers = max(len(pinned_tickers), int(selector_cfg.get("top_n", 8))) + 1
     last_selected_tickers: List[str] = []
     shared_risk_state = {"active_markets": 1}
     selector_backoff_seconds = 5.0
     max_selector_backoff_seconds = 120.0
 
+    if pinned_tickers:
+        logger.info(f"Pinned tickers mode: skipping selector, using {pinned_tickers}")
+
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         try:
             while True:
-                markets: List[Dict] = []
-                selected_tickers = last_selected_tickers
+                if pinned_tickers:
+                    selected_tickers = pinned_tickers
+                    logger.info(f"Using pinned tickers: {selected_tickers}")
+                else:
+                    markets: List[Dict] = []
+                    selected_tickers = last_selected_tickers
 
-                try:
-                    markets = selector_api.list_all_open_markets(
-                        series_ticker=series_ticker,
-                        mve_filter=mve_filter,
-                        page_limit=page_limit,
-                        max_pages=max_pages,
-                        max_markets=max_markets,
-                        category=category,
-                    )
-                    ranked = select_top_markets(markets, selector_cfg)
-                    selected_tickers = [ticker for ticker, _, _, _ in ranked]
-                    last_selected_tickers = selected_tickers
-                    selector_backoff_seconds = 5.0
-                except requests.exceptions.HTTPError as http_error:
-                    status_code = http_error.response.status_code if http_error.response is not None else None
-                    if status_code == 429:
-                        logger.warning(
-                            f"Selector rate-limited (429). Reusing previous selection and backing off for "
-                            f"{selector_backoff_seconds:.1f}s"
+                    try:
+                        markets = selector_api.list_all_open_markets(
+                            series_ticker=series_ticker,
+                            mve_filter=mve_filter,
+                            page_limit=page_limit,
+                            max_pages=max_pages,
+                            max_markets=max_markets,
+                            category=category,
                         )
+                        ranked = select_top_markets(markets, selector_cfg)
+                        selected_tickers = [ticker for ticker, _, _, _ in ranked]
+                        last_selected_tickers = selected_tickers
+                        selector_backoff_seconds = 5.0
+                    except requests.exceptions.HTTPError as http_error:
+                        status_code = http_error.response.status_code if http_error.response is not None else None
+                        if status_code == 429:
+                            logger.warning(
+                                f"Selector rate-limited (429). Reusing previous selection and backing off for "
+                                f"{selector_backoff_seconds:.1f}s"
+                            )
+                            time.sleep(selector_backoff_seconds)
+                            selector_backoff_seconds = min(
+                                selector_backoff_seconds * 2,
+                                max_selector_backoff_seconds,
+                            )
+                        else:
+                            logger.error(f"Selector HTTP error ({status_code}): {http_error}")
+                            time.sleep(selector_backoff_seconds)
+                    except requests.exceptions.RequestException as request_exception:
+                        logger.error(f"Selector request error: {request_exception}")
                         time.sleep(selector_backoff_seconds)
-                        selector_backoff_seconds = min(
-                            selector_backoff_seconds * 2,
-                            max_selector_backoff_seconds,
-                        )
-                    else:
-                        logger.error(f"Selector HTTP error ({status_code}): {http_error}")
-                        time.sleep(selector_backoff_seconds)
-                except requests.exceptions.RequestException as request_exception:
-                    logger.error(f"Selector request error: {request_exception}")
-                    time.sleep(selector_backoff_seconds)
+
+                    logger.info(f"Selector found {len(markets)} open markets; selected: {selected_tickers}")
 
                 selected_set = set(selected_tickers)
                 shared_risk_state["active_markets"] = max(1, len(selected_tickers))
-                logger.info(f"Selector found {len(markets)} open markets; selected: {selected_tickers}")
 
                 for ticker in list(active_workers.keys()):
                     stop_event, future = active_workers[ticker]
