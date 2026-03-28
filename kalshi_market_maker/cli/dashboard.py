@@ -78,6 +78,32 @@ def summarize_positions(positions: List[Dict]) -> Dict[str, float]:
     }
 
 
+def format_fill_price(fill: Dict) -> str:
+    yes_price = fill.get("yes_price")
+    no_price = fill.get("no_price")
+    side = fill.get("side", "")
+    if side == "yes" and yes_price is not None:
+        return f"${yes_price / 100:.2f}"
+    if side == "no" and no_price is not None:
+        return f"${no_price / 100:.2f}"
+    price = yes_price if yes_price is not None else no_price
+    return f"${price / 100:.2f}" if price is not None else "n/a"
+
+
+def format_fill_time(fill: Dict) -> str:
+    raw = fill.get("created_time", "")
+    if not raw:
+        return "n/a"
+    # Strip sub-second precision and 'Z' suffix so strptime works on all Pythons
+    trimmed = raw[:19]
+    try:
+        import datetime
+        dt = datetime.datetime.strptime(trimmed, "%Y-%m-%dT%H:%M:%S")
+        return dt.strftime("%H:%M:%S")
+    except (ValueError, TypeError):
+        return trimmed
+
+
 def collect_snapshot(api, logger, fetch_balance: bool, balance_supported: bool):
     positions = api.list_all_positions()
     active_statuses = ["resting", "open"]
@@ -101,6 +127,12 @@ def collect_snapshot(api, logger, fetch_balance: bool, balance_supported: bool):
             order_copy["_dashboard_status"] = status
             combined_orders.append(order_copy)
 
+    recent_fills: List[Dict] = []
+    try:
+        recent_fills = api.list_recent_fills(limit=20)
+    except Exception as fills_exception:
+        logger.warning(f"Fills fetch failed: {fills_exception}")
+
     balance = None
     if fetch_balance and balance_supported:
         try:
@@ -109,7 +141,7 @@ def collect_snapshot(api, logger, fetch_balance: bool, balance_supported: bool):
             logger.warning(f"Balance endpoint unavailable: {balance_exception}")
             balance_supported = False
 
-    return positions, combined_orders, balance, balance_supported
+    return positions, combined_orders, recent_fills, balance, balance_supported
 
 
 def render_dashboard(stdscr, args, api, logger):
@@ -119,6 +151,7 @@ def render_dashboard(stdscr, args, api, logger):
 
     last_positions: List[Dict] = []
     last_orders: List[Dict] = []
+    last_fills: List[Dict] = []
     last_balance: Optional[Dict] = None
     last_error: str = ""
     balance_supported = True
@@ -133,7 +166,7 @@ def render_dashboard(stdscr, args, api, logger):
         fetch_balance_now = refresh_counter % max(1, args.balance_every_n) == 0
 
         try:
-            positions, orders, balance, balance_supported = collect_snapshot(
+            positions, orders, fills, balance, balance_supported = collect_snapshot(
                 api,
                 logger,
                 fetch_balance=fetch_balance_now,
@@ -141,6 +174,7 @@ def render_dashboard(stdscr, args, api, logger):
             )
             last_positions = positions
             last_orders = orders
+            last_fills = fills
             if balance is not None:
                 last_balance = balance
             last_error = ""
@@ -229,7 +263,8 @@ def render_dashboard(stdscr, args, api, logger):
         draw_line(stdscr, orders_header_row, "Active Orders (status | ticker | id | action | side | remaining)", width, curses.A_UNDERLINE)
 
         row = orders_header_row + 1
-        max_rows_for_orders = max(3, height - row - 1)
+        remaining_rows = max(9, height - row - 1)
+        max_rows_for_orders = max(3, remaining_rows // 2)
         for order in last_orders[:max_rows_for_orders]:
             draw_line(
                 stdscr,
@@ -241,6 +276,29 @@ def render_dashboard(stdscr, args, api, logger):
                     f"{str(order.get('action', 'n/a')):<4} | "
                     f"{str(order.get('side', 'n/a')):<3} | "
                     f"{safe_int(order.get('remaining_count', 0)):>6}"
+                ),
+                width,
+            )
+            row += 1
+
+        fills_header_row = orders_header_row + 1 + max_rows_for_orders + 1
+        draw_line(stdscr, fills_header_row, "Recent Trades (time | ticker | action | side | count | price | taker)", width, curses.A_UNDERLINE)
+
+        row = fills_header_row + 1
+        max_rows_for_fills = max(3, height - row - 1)
+        for fill in last_fills[:max_rows_for_fills]:
+            taker_flag = "T" if fill.get("is_taker") else "M"
+            draw_line(
+                stdscr,
+                row,
+                (
+                    f"{format_fill_time(fill):<8} | "
+                    f"{fill.get('ticker', 'UNKNOWN'):<30} | "
+                    f"{str(fill.get('action', 'n/a')):<4} | "
+                    f"{str(fill.get('side', 'n/a')):<3} | "
+                    f"{safe_int(fill.get('count', 0)):>5} | "
+                    f"{format_fill_price(fill):>7} | "
+                    f"{taker_flag}"
                 ),
                 width,
             )

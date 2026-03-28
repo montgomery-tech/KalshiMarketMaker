@@ -289,6 +289,18 @@ class KalshiTradingAPI(AbstractTradingAPI):
 
         return orders
 
+    def list_recent_fills(
+        self,
+        ticker: Optional[str] = None,
+        limit: int = 25,
+    ) -> List[Dict]:
+        path = "/portfolio/fills"
+        params: Dict = {"limit": limit}
+        if ticker:
+            params["ticker"] = ticker
+        response = self.make_request("GET", path, params=params)
+        return response.get("fills", [])
+
     def list_markets(
         self,
         status: str = "open",
