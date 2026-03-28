@@ -139,12 +139,13 @@ def main():
     api = create_api({}, logger, market_ticker="DYNAMIC")
 
     try:
-        markets = api.list_all_open_markets(
-            category="Sports",
+        all_markets = api.list_all_open_markets(
             page_limit=args.page_limit,
             max_pages=args.max_pages,
             max_markets=args.page_limit * args.max_pages,
         )
+
+        markets = [m for m in all_markets if "sport" in m.get("category", "").lower()]
 
         if not args.all:
             markets = [m for m in markets if is_live(m, args.live_hours)]
