@@ -56,13 +56,9 @@ def select_top_markets(markets: List[Dict], selector_cfg: Dict) -> List[Tuple[st
     spread_weight = safe_float(selector_cfg.get("spread_weight", 0.5))
 
     candidates = []
-    rejected_unsupported = 0
-    rejected_volume = 0
-    rejected_spread = 0
 
     for market in markets:
         if not is_supported_binary_market(market):
-            rejected_unsupported += 1
             continue
 
         ticker = market.get("ticker")
@@ -73,10 +69,8 @@ def select_top_markets(markets: List[Dict], selector_cfg: Dict) -> List[Tuple[st
         spread_cents = compute_spread_cents(market)
 
         if volume_24h < min_volume_24h:
-            rejected_volume += 1
             continue
         if spread_cents < min_spread_cents:
-            rejected_spread += 1
             continue
 
         candidates.append(
@@ -86,27 +80,6 @@ def select_top_markets(markets: List[Dict], selector_cfg: Dict) -> List[Tuple[st
                 "spread_cents": spread_cents,
             }
         )
-
-    if markets:
-        sample = markets[0]
-        print(
-            f"[scoring] sample market keys: {sorted(sample.keys())}",
-            flush=True,
-        )
-        print(
-            f"[scoring] sample yes_bid={sample.get('yes_bid')} yes_ask={sample.get('yes_ask')} "
-            f"volume_24h={sample.get('volume_24h')} volume={sample.get('volume')} "
-            f"market_type={sample.get('market_type')} ticker={sample.get('ticker')}",
-            flush=True,
-        )
-    print(
-        f"[scoring] filter breakdown: total={len(markets)} "
-        f"rejected_unsupported={rejected_unsupported} "
-        f"rejected_volume={rejected_volume} (min={min_volume_24h}) "
-        f"rejected_spread={rejected_spread} (min={min_spread_cents}) "
-        f"candidates={len(candidates)}",
-        flush=True,
-    )
 
     if not candidates:
         return []
