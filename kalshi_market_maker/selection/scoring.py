@@ -9,11 +9,11 @@ def safe_float(value, default=0.0):
 
 
 def compute_spread_cents(market: Dict) -> float:
-    yes_bid = safe_float(market.get("yes_bid"), -1)
-    yes_ask = safe_float(market.get("yes_ask"), -1)
+    yes_bid = safe_float(market.get("yes_bid_dollars"), -1)
+    yes_ask = safe_float(market.get("yes_ask_dollars"), -1)
     if yes_bid < 0 or yes_ask < 0:
         return -1
-    return yes_ask - yes_bid
+    return round((yes_ask - yes_bid) * 100, 2)
 
 
 def is_supported_binary_market(market: Dict) -> bool:
