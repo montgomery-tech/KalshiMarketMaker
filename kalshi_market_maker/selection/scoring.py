@@ -87,6 +87,18 @@ def select_top_markets(markets: List[Dict], selector_cfg: Dict) -> List[Tuple[st
             }
         )
 
+    if markets:
+        sample = markets[0]
+        print(
+            f"[scoring] sample market keys: {sorted(sample.keys())}",
+            flush=True,
+        )
+        print(
+            f"[scoring] sample yes_bid={sample.get('yes_bid')} yes_ask={sample.get('yes_ask')} "
+            f"volume_24h={sample.get('volume_24h')} volume={sample.get('volume')} "
+            f"market_type={sample.get('market_type')} ticker={sample.get('ticker')}",
+            flush=True,
+        )
     print(
         f"[scoring] filter breakdown: total={len(markets)} "
         f"rejected_unsupported={rejected_unsupported} "
