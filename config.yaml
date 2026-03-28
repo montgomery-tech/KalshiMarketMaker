@@ -8,16 +8,19 @@ dynamic:
     top_n: 5
     refresh_seconds: 45
     worker_shutdown_timeout_seconds: 15
-    min_volume_24h: 500
+    min_volume_24h: 10
     min_spread_cents: 2
     volume_weight: 0.35
     spread_weight: 0.65
     mve_filter: exclude
-    category: "sports"
+    # category: "sports"        # Kalshi API ignores this param; use series_ticker to narrow scope
     page_limit: 250
     max_pages: 5
     max_markets: 1250
-    # series_ticker: "KXNBA"  # narrow to a specific sport/series
+    # series_ticker: "KXNBA"    # narrow to a specific sport/series
+    # pinned_tickers:            # skip selector entirely and trade these markets directly
+    #   - "TICKER1"
+    #   - "TICKER2"
   market_maker:
     max_position: 3
     order_expiration: 3600

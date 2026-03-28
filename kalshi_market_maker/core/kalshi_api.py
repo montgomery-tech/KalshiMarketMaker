@@ -143,10 +143,10 @@ class KalshiTradingAPI(AbstractTradingAPI):
         path = f"/markets/{self.market_ticker}"
         data = self.make_request("GET", path)
 
-        yes_bid = float(data["market"]["yes_bid"]) / 100
-        yes_ask = float(data["market"]["yes_ask"]) / 100
-        no_bid = float(data["market"]["no_bid"]) / 100
-        no_ask = float(data["market"]["no_ask"]) / 100
+        yes_bid = float(data["market"]["yes_bid_dollars"])
+        yes_ask = float(data["market"]["yes_ask_dollars"])
+        no_bid = float(data["market"]["no_bid_dollars"])
+        no_ask = float(data["market"]["no_ask_dollars"])
 
         yes_mid_price = round((yes_bid + yes_ask) / 2, 2)
         no_mid_price = round((no_bid + no_ask) / 2, 2)
