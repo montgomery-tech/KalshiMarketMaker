@@ -4,6 +4,7 @@
 .venv/
 secrets/
 runs/
+output/
 
 # Python bytecode and caches
 *.py[cod]
